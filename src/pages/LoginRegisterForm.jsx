@@ -81,8 +81,6 @@ const LoginRegisterForm = () => {
         password: formData.password
       };
 
-      console.log('JSON de registro enviado:', JSON.stringify(dataToSend, null, 2));
-
       setIsSubmitting(true);
       try {
         const response = await fetch('http://localhost:8080/api/auth/register', {
@@ -94,6 +92,14 @@ const LoginRegisterForm = () => {
         });
 
         const data = await response.json();
+        
+        // Mostrar la respuesta completa del servidor
+        console.log('Respuesta del servidor (registro):', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries([...response.headers]),
+          data: data
+        });
 
         if (response.ok) {
           setSubmitMessage({
@@ -135,7 +141,8 @@ const LoginRegisterForm = () => {
         password: formData.password
       };
 
-      console.log('JSON de login enviado:', JSON.stringify(loginData, null, 2));
+      // Eliminamos el console.log que muestra lo que se envía
+      // console.log('JSON de login enviado:', JSON.stringify(loginData, null, 2));
 
       setIsSubmitting(true);
       try {
@@ -148,6 +155,14 @@ const LoginRegisterForm = () => {
         });
 
         const data = await response.json();
+
+        // Agregamos console.log para mostrar la respuesta del servidor en el login
+        console.log('Respuesta del servidor (login):', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries([...response.headers]),
+          data: data
+        });
 
         if (response.ok) {
           setSubmitMessage({
