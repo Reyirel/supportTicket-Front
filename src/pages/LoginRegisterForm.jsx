@@ -91,9 +91,45 @@ const LoginRegisterForm = () => {
           body: JSON.stringify(dataToSend)
         });
 
-        const data = await response.json();
+        // Intenta procesar la respuesta JSON de manera segura
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('Error al procesar JSON:', jsonError);
+          // El servidor respondió, pero no con JSON válido
+          if (response.ok) {
+            // Si el estado es exitoso pero no hay JSON válido
+            setSubmitMessage({
+              type: 'success',
+              message: 'Registro exitoso. Ahora puedes iniciar sesión.'
+            });
+            
+            // Reiniciar formulario y cambiar a login
+            setFormData({
+              name: '',
+              password: '',
+              confirmPassword: '',
+              secretaria: '',
+              direccion: '',
+              email: '',
+              telefono: '',
+              confirmTelefono: ''
+            });
+            setTimeout(() => {
+              setIsLogin(true);
+            }, 2000);
+            return;
+          } else {
+            // Error en la respuesta pero sin JSON válido
+            setSubmitMessage({
+              type: 'error',
+              message: `Error en el servidor: ${response.status} ${response.statusText}`
+            });
+            return;
+          }
+        }
         
-        // Mostrar la respuesta completa del servidor
         console.log('Respuesta del servidor (registro):', {
           status: response.status,
           statusText: response.statusText,
@@ -123,13 +159,14 @@ const LoginRegisterForm = () => {
         } else {
           setSubmitMessage({
             type: 'error',
-            message: data.message || 'Error en el registro. Intenta nuevamente.'
+            message: data.message || `Error en el servidor: ${response.status}`
           });
         }
       } catch (error) {
+        console.error('Error completo:', error);
         setSubmitMessage({
           type: 'error',
-          message: 'Error de conexión. Verifica tu conexión e intenta nuevamente.'
+          message: `Error de red: ${error.message || 'Verifica tu conexión e intenta nuevamente'}`
         });
       } finally {
         setIsSubmitting(false);
@@ -141,11 +178,19 @@ const LoginRegisterForm = () => {
         password: formData.password
       };
 
-      // Eliminamos el console.log que muestra lo que se envía
-      // console.log('JSON de login enviado:', JSON.stringify(loginData, null, 2));
+      // Mostramos el JSON que se enviará al servidor
+      console.log('JSON de login enviado:', JSON.stringify(loginData, null, 2));
 
       setIsSubmitting(true);
       try {
+        // Antes de la petición, mostrar los datos que se enviarán
+        console.log('Datos de inicio de sesión a enviar:', {
+          endpoint: 'http://localhost:8080/api/auth/login',
+          método: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          datos: loginData
+        });
+        
         const response = await fetch('http://localhost:8080/api/auth/login', {
           method: 'POST',
           headers: {
@@ -165,16 +210,39 @@ const LoginRegisterForm = () => {
         });
 
         if (response.ok) {
+          // Verificar que realmente tenemos un token en la respuesta
+          console.log('Token recibido:', data.token);
+          
+          if (!data.token) {
+            console.error('No se recibió token en la respuesta');
+            setSubmitMessage({
+              type: 'error',
+              message: 'Error en la autenticación: No se recibió token'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Guardar el token en localStorage ANTES de la redirección
+          localStorage.setItem('authToken', data.token);
+          console.log('Token guardado en localStorage:', localStorage.getItem('authToken'));
+          
           setSubmitMessage({
             type: 'success',
             message: 'Inicio de sesión exitoso. Redirigiendo...'
           });
-
-          localStorage.setItem('authToken', data.token);
-
+          
+          // Redirección con setTimeout para asegurar que el estado se actualice
           setTimeout(() => {
-            navigate('/dashboard');
-          }, 1500);
+            console.log('Intentando redirección a /dashboard después de timeout');
+            try {
+              navigate('/dashboard', { replace: true });
+              console.log('Navegación completada');
+            } catch (navError) {
+              console.error('Error en navigate:', navError);
+              window.location.href = '/dashboard';
+            }
+          }, 1000);
         } else {
           setSubmitMessage({
             type: 'error',
@@ -501,6 +569,21 @@ const LoginRegisterForm = () => {
                 </a>
               </motion.div>
 
+              {/* Mensajes de éxito o error - AÑADIR ESTO */}
+              {submitMessage.message && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`p-3 rounded-lg text-center mb-4`}
+                  style={{
+                    backgroundColor: submitMessage.type === 'success' ? `${colors.success}20` : `${colors.error}20`,
+                    color: submitMessage.type === 'success' ? colors.success : colors.error
+                  }}
+                >
+                  {submitMessage.message}
+                </motion.div>
+              )}
+
               {/* Botón de envío */}
               <motion.button
                 variants={itemVariants}
@@ -511,11 +594,13 @@ const LoginRegisterForm = () => {
                 style={{
                   background: `linear-gradient(135deg, ${colors.gradient.start} 0%, ${colors.gradient.middle} 50%, ${colors.gradient.end} 100%)`,
                   boxShadow: '0 4px 15px rgba(160, 33, 66, 0.2)',
-                  fontFamily: 'Arial, sans-serif'
+                  fontFamily: 'Arial, sans-serif',
+                  opacity: isSubmitting ? 0.7 : 1
                 }}
                 {...glowEffect}
+                disabled={isSubmitting}
               >
-                Iniciar Sesión
+                {isSubmitting ? 'Procesando...' : 'Iniciar Sesión'}
               </motion.button>
             </motion.form>
 
