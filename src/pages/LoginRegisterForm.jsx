@@ -196,35 +196,30 @@ const LoginRegisterForm = () => {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(loginData)
+          body: JSON.stringify(loginData),
+          credentials: 'include',
+          mode: 'cors'
         });
 
-        const data = await response.json();
+        // Verificamos si la respuesta es correcta
+        if (!response.ok) {
+          console.error('Error en la respuesta:', response.status, response.statusText);
+          setSubmitMessage({
+            type: 'error',
+            message: `Error en el servidor: ${response.status} ${response.statusText}`
+          });
+          setIsSubmitting(false);
+          return;
+        }
 
-        // Agregamos console.log para mostrar la respuesta del servidor en el login
-        console.log('Respuesta del servidor (login):', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries([...response.headers]),
-          data: data
-        });
-
-        if (response.ok) {
-          // Verificar que realmente tenemos un token en la respuesta
-          console.log('Token recibido:', data.token);
-          
-          if (!data.token) {
-            console.error('No se recibió token en la respuesta');
-            setSubmitMessage({
-              type: 'error',
-              message: 'Error en la autenticación: No se recibió token'
-            });
-            setIsSubmitting(false);
-            return;
-          }
-          
-          // Guardar el token en localStorage ANTES de la redirección
-          localStorage.setItem('authToken', data.token);
+        // Obtenemos la respuesta como texto directamente ya que sabemos que es un token JWT
+        const tokenText = await response.text();
+        console.log('Token recibido (texto):', tokenText);
+        
+        // Verificamos si parece un token JWT válido (comienza con 'eyJ')
+        if (tokenText && tokenText.startsWith('eyJ')) {
+          // Guardar el token en localStorage
+          localStorage.setItem('authToken', tokenText);
           console.log('Token guardado en localStorage:', localStorage.getItem('authToken'));
           
           setSubmitMessage({
@@ -232,24 +227,19 @@ const LoginRegisterForm = () => {
             message: 'Inicio de sesión exitoso. Redirigiendo...'
           });
           
-          // Redirección con setTimeout para asegurar que el estado se actualice
+          // Redirigir al dashboard después de 1 segundo
           setTimeout(() => {
-            console.log('Intentando redirección a /dashboard después de timeout');
-            try {
-              navigate('/dashboard', { replace: true });
-              console.log('Navegación completada');
-            } catch (navError) {
-              console.error('Error en navigate:', navError);
-              window.location.href = '/dashboard';
-            }
+            navigate('/dashboard');
           }, 1000);
         } else {
+          console.error('La respuesta no parece ser un token JWT válido:', tokenText);
           setSubmitMessage({
             type: 'error',
-            message: data.message || 'Credenciales incorrectas. Intente nuevamente.'
+            message: 'Error en la autenticación: Respuesta no reconocida'
           });
         }
       } catch (error) {
+        console.error('Error completo en fetch:', error);
         setSubmitMessage({
           type: 'error',
           message: 'Error de conexión. Verifica tu conexión e intenta nuevamente.'
