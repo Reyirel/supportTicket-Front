@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { validateRegisterData, validateLoginData } from '../utils/validation';
+import { loginUser, registerUser } from '../services/authService';
 
 const LoginRegisterForm = () => {
   const navigate = useNavigate();
@@ -15,27 +17,26 @@ const LoginRegisterForm = () => {
     telefono: '',
     confirmTelefono: ''
   });
-  // Agregar estados para manejar errores
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: '', message: '' });
 
   // Paleta de colores actualizada
   const colors = {
-    primary: '#a02142',
-    secondary: '#731630',
-    accent: '#c4264f',
-    background: '#f5f5f5',
-    text: '#000000',
-    lightText: '#4a4a4a',
+    primary: '#D7EAE2',
+    secondary: '#A3C4BC',
+    accent: '#7FA3A8',
+    background: '#FFFFFF',
+    text: '#2C3E50',
+    lightText: '#606D7C',
     success: '#2d8236',
     error: '#d90429',
-    cardBg: '#ffffff',
-    inputBg: '#f0f0f0',
+    cardBg: '#FFFFFF',
+    inputBg: '#F0F0F0',
     gradient: {
-      start: '#a02142',
-      middle: '#731630',
-      end: '#4a0f1f'
+      start: '#D7EAE2',
+      middle: '#A3C4BC',
+      end: '#7FA3A8'
     }
   };
 
@@ -52,26 +53,13 @@ const LoginRegisterForm = () => {
     e.preventDefault();
 
     if (!isLogin) {
-      // Validación para registro
-      const newErrors = {};
-
-      // Validar contraseñas
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Las contraseñas no coinciden';
-      }
-
-      // Validar teléfonos
-      if (formData.telefono !== formData.confirmTelefono) {
-        newErrors.confirmTelefono = 'Los números de teléfono no coinciden';
-      }
-
-      // Verificar si hay errores
+      // Validación y lógica para registro
+      const newErrors = validateRegisterData(formData);
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
         return;
       }
 
-      // Preparar datos para enviar al backend
       const dataToSend = {
         name: formData.name,
         secretaria: formData.secretaria,
@@ -82,171 +70,50 @@ const LoginRegisterForm = () => {
       };
 
       setIsSubmitting(true);
-      try {
-        const response = await fetch('http://localhost:8080/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(dataToSend)
+      const result = await registerUser(dataToSend);
+      if (result.success) {
+        setSubmitMessage({ type: 'success', message: result.message });
+        setFormData({
+          name: '',
+          password: '',
+          confirmPassword: '',
+          secretaria: '',
+          direccion: '',
+          email: '',
+          telefono: '',
+          confirmTelefono: ''
         });
-
-        // Intenta procesar la respuesta JSON de manera segura
-        let data;
-        try {
-          data = await response.json();
-        } catch (jsonError) {
-          console.error('Error al procesar JSON:', jsonError);
-          // El servidor respondió, pero no con JSON válido
-          if (response.ok) {
-            // Si el estado es exitoso pero no hay JSON válido
-            setSubmitMessage({
-              type: 'success',
-              message: 'Registro exitoso. Ahora puedes iniciar sesión.'
-            });
-            
-            // Reiniciar formulario y cambiar a login
-            setFormData({
-              name: '',
-              password: '',
-              confirmPassword: '',
-              secretaria: '',
-              direccion: '',
-              email: '',
-              telefono: '',
-              confirmTelefono: ''
-            });
-            setTimeout(() => {
-              setIsLogin(true);
-            }, 2000);
-            return;
-          } else {
-            // Error en la respuesta pero sin JSON válido
-            setSubmitMessage({
-              type: 'error',
-              message: `Error en el servidor: ${response.status} ${response.statusText}`
-            });
-            return;
-          }
-        }
-        
-        console.log('Respuesta del servidor (registro):', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries([...response.headers]),
-          data: data
-        });
-
-        if (response.ok) {
-          setSubmitMessage({
-            type: 'success',
-            message: 'Registro exitoso. Ahora puedes iniciar sesión.'
-          });
-
-          setFormData({
-            name: '',
-            password: '',
-            confirmPassword: '',
-            secretaria: '',
-            direccion: '',
-            email: '',
-            telefono: '',
-            confirmTelefono: ''
-          });
-          setTimeout(() => {
-            setIsLogin(true);
-          }, 2000);
-        } else {
-          setSubmitMessage({
-            type: 'error',
-            message: data.message || `Error en el servidor: ${response.status}`
-          });
-        }
-      } catch (error) {
-        console.error('Error completo:', error);
-        setSubmitMessage({
-          type: 'error',
-          message: `Error de red: ${error.message || 'Verifica tu conexión e intenta nuevamente'}`
-        });
-      } finally {
-        setIsSubmitting(false);
+        setTimeout(() => {
+          setIsLogin(true);
+        }, 2000);
+      } else {
+        setSubmitMessage({ type: 'error', message: result.message });
       }
+      setIsSubmitting(false);
     } else {
-      // Lógica para inicio de sesión
+      // Validación y lógica para inicio de sesión
+      const newErrors = validateLoginData(formData);
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+
       const loginData = {
         email: formData.email,
         password: formData.password
       };
 
-      // Mostramos el JSON que se enviará al servidor
-      console.log('JSON de login enviado:', JSON.stringify(loginData, null, 2));
-
       setIsSubmitting(true);
-      try {
-        // Antes de la petición, mostrar los datos que se enviarán
-        console.log('Datos de inicio de sesión a enviar:', {
-          endpoint: 'http://localhost:8080/api/auth/login',
-          método: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          datos: loginData
-        });
-        
-        const response = await fetch('http://localhost:8080/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(loginData),
-          credentials: 'include',
-          mode: 'cors'
-        });
-
-        // Verificamos si la respuesta es correcta
-        if (!response.ok) {
-          console.error('Error en la respuesta:', response.status, response.statusText);
-          setSubmitMessage({
-            type: 'error',
-            message: `Error en el servidor: ${response.status} ${response.statusText}`
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
-        // Obtenemos la respuesta como texto directamente ya que sabemos que es un token JWT
-        const tokenText = await response.text();
-        console.log('Token recibido (texto):', tokenText);
-        
-        // Verificamos si parece un token JWT válido (comienza con 'eyJ')
-        if (tokenText && tokenText.startsWith('eyJ')) {
-          // Guardar el token en localStorage
-          localStorage.setItem('authToken', tokenText);
-          console.log('Token guardado en localStorage:', localStorage.getItem('authToken'));
-          
-          setSubmitMessage({
-            type: 'success',
-            message: 'Inicio de sesión exitoso. Redirigiendo...'
-          });
-          
-          // Redirigir al dashboard después de 1 segundo
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 1000);
-        } else {
-          console.error('La respuesta no parece ser un token JWT válido:', tokenText);
-          setSubmitMessage({
-            type: 'error',
-            message: 'Error en la autenticación: Respuesta no reconocida'
-          });
-        }
-      } catch (error) {
-        console.error('Error completo en fetch:', error);
-        setSubmitMessage({
-          type: 'error',
-          message: 'Error de conexión. Verifica tu conexión e intenta nuevamente.'
-        });
-      } finally {
-        setIsSubmitting(false);
+      const result = await loginUser(loginData);
+      if (result.success) {
+        setSubmitMessage({ type: 'success', message: result.message });
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
+      } else {
+        setSubmitMessage({ type: 'error', message: result.message });
       }
+      setIsSubmitting(false);
     }
   };
 
@@ -455,7 +322,7 @@ const LoginRegisterForm = () => {
               <motion.button
                 className="py-2 w-1/2 text-center relative z-10 rounded-full"
                 onClick={() => setIsLogin(true)}
-                style={{ color: isLogin ? colors.primary : colors.lightText, fontFamily: 'Arial, sans-serif' }}
+                style={{ color: isLogin ? '#7FA3A8' : colors.lightText, fontFamily: 'Arial, sans-serif' }}
                 whileTap={{ scale: 0.95 }}
               >
                 Iniciar Sesión
@@ -463,7 +330,7 @@ const LoginRegisterForm = () => {
               <motion.button
                 className="py-2 w-1/2 text-center relative z-10 rounded-full"
                 onClick={() => setIsLogin(false)}
-                style={{ color: !isLogin ? colors.primary : colors.lightText, fontFamily: 'Arial, sans-serif' }}
+                style={{ color: !isLogin ? '#7FA3A8' : colors.lightText, fontFamily: 'Arial, sans-serif' }}
                 whileTap={{ scale: 0.95 }}
               >
                 Registrarse
@@ -553,7 +420,7 @@ const LoginRegisterForm = () => {
                 <a
                   href="#"
                   className="text-sm hover:underline"
-                  style={{ color: colors.primary, fontFamily: 'Arial, sans-serif' }}
+                  style={{ color: '#7FA3A8', fontFamily: 'Arial, sans-serif', fontWeight: '500' }}
                 >
                   ¿Olvidaste tu contraseña?
                 </a>
@@ -582,12 +449,11 @@ const LoginRegisterForm = () => {
                 type="submit"
                 className="w-full py-3 rounded-lg text-white font-medium mt-6"
                 style={{
-                  background: `linear-gradient(135deg, ${colors.gradient.start} 0%, ${colors.gradient.middle} 50%, ${colors.gradient.end} 100%)`,
-                  boxShadow: '0 4px 15px rgba(160, 33, 66, 0.2)',
+                  backgroundColor: '#7FA3A8',  // color más fuerte sin degradado
+                  boxShadow: 'none',
                   fontFamily: 'Arial, sans-serif',
                   opacity: isSubmitting ? 0.7 : 1
                 }}
-                {...glowEffect}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Procesando...' : 'Iniciar Sesión'}
@@ -826,13 +692,12 @@ const LoginRegisterForm = () => {
                 whileHover="hover"
                 whileTap="tap"
                 type="submit"
-                className="w-full py-3 rounded-lg text-white font-medium "
+                className="w-full py-3 rounded-lg text-white font-medium"
                 style={{
-                  background: `linear-gradient(135deg, ${colors.gradient.start} 0%, ${colors.gradient.middle} 50%, ${colors.gradient.end} 100%)`,
-                  boxShadow: '0 4px 15px rgba(160, 33, 66, 0.2)',
+                  backgroundColor: '#7FA3A8',  // color más fuerte sin degradado
+                  boxShadow: 'none',
                   opacity: isSubmitting ? 0.7 : 1
                 }}
-                {...glowEffect}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Procesando...' : 'Crear Cuenta'}
