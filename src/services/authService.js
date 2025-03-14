@@ -66,9 +66,7 @@ export const loginUser = async (loginData) => {
     }
 
     if (token) {
-      // Guardar el token en una cookie
       document.cookie = `authToken=${token}; path=/; max-age=86400; samesite=strict`;
-      // Guardar los datos del usuario en localStorage
       localStorage.setItem(
         'userData',
         JSON.stringify({

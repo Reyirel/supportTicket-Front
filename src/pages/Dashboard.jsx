@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User, LogOut, Home, FileText, BarChart2, Bell } from 'lucide-react';
+import { Menu, X, User, LogOut, Home, FileText, BarChart2, Bell, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useDashboardLogic from '../hooks/useDashboardLogic';
 
 import Inicio from '../components/Inicio';
 import Solicitudes from '../components/Solicitudes';
+import Reportes from '../components/Reportes';
 import Perfil from '../components/Perfil';
+import AllTickets from '../components/AllTickets';
+import AdminTickets from '../components/AdminTickets';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { userName, userEmail, userRole, userSecretaria, userDireccion, userPhone, handleLogout } = useDashboardLogic();
 
-  // Paleta de colores mejorada - más sólidos pero manteniendo la esencia
   const colors = {
     primary: '#C4E5D8',     // Verde claro más vibrante
     secondary: '#8BBAB0',   // Verde medio más sólido
@@ -27,9 +29,8 @@ const Dashboard = () => {
     shadow: 'rgba(91, 149, 160, 0.12)', // Sombra basada en el color accent
   };
 
-  // Resto de estados y lógica de UI (sidebar, menú, etc.)
   const [isOpen, setIsOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState('home');
+  const [activeItem, setActiveItem] = useState(userRole === 'SUPPORT_STAFF' ? 'tickets' : 'home');
   const [isMobile, setIsMobile] = useState(false);
   const [previousItem, setPreviousItem] = useState(null);
 
@@ -45,6 +46,12 @@ const Dashboard = () => {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
+  useEffect(() => {
+    if (userRole === 'SUPPORT_STAFF') {
+      setActiveItem('tickets');
+    }
+  }, [userRole]);
+
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
@@ -56,14 +63,14 @@ const Dashboard = () => {
     }
   };
 
-  // Determina la dirección de la animación basada en el menú anterior y actual
   const getAnimationDirection = () => {
-    const menuOrder = ['home', 'reports', 'analytics', 'perfil'];
+    const menuOrder = userRole === 'SUPPORT_STAFF' 
+      ? ['tickets', 'perfil']
+      : ['home', 'reports', 'analytics', 'perfil'];
     if (!previousItem) return 1;
     
     const prevIndex = menuOrder.indexOf(previousItem);
     const currentIndex = menuOrder.indexOf(activeItem);
-    
     return prevIndex < currentIndex ? 1 : -1;
   };
 
@@ -81,6 +88,11 @@ const Dashboard = () => {
     enter: (direction) => ({
       x: direction > 0 ? 100 : -100,
       opacity: 0,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 25
+      }
     }),
     center: {
       x: 0,
@@ -102,9 +114,43 @@ const Dashboard = () => {
     })
   };
 
-  const renderContent = () => {
-    const direction = getAnimationDirection();
+  const getMenuItems = () => {
+    if (userRole === 'SUPPORT_STAFF') {
+      return [
+        { id: 'tickets', icon: Ticket, label: 'Tickets' }
+      ];
+    }
     
+    return [
+      { id: 'home', icon: Home, label: 'Inicio' },
+      { id: 'reports', icon: FileText, label: 'Reportes' },
+      { id: 'analytics', icon: BarChart2, label: 'Analítica' }
+    ];
+  };
+
+  const renderContent = () => {
+    if (userRole === 'SUPPORT_STAFF') {
+      const direction = getAnimationDirection();
+      return (
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={activeItem}
+            custom={direction}
+            variants={contentVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="w-full h-full"
+          >
+            {activeItem === 'tickets' && <AdminTickets />}
+            {activeItem === 'perfil' && <Perfil />}
+            {!['tickets', 'perfil'].includes(activeItem) && <div>Componente no encontrado</div>}
+          </motion.div>
+        </AnimatePresence>
+      );
+    }
+    
+    const direction = getAnimationDirection();
     return (
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
@@ -117,9 +163,10 @@ const Dashboard = () => {
           className="w-full h-full"
         >
           {activeItem === 'home' && <Inicio />}
-          {activeItem === 'reports' && <Solicitudes />}
+          {activeItem === 'reports' && <Reportes />}
+          {activeItem === 'analytics' && <AllTickets />}
           {activeItem === 'perfil' && <Perfil />}
-          {!['home', 'reports', 'perfil'].includes(activeItem) && <div>Componente no encontrado</div>}
+          {!['home', 'reports', 'analytics', 'perfil'].includes(activeItem) && <div>Componente no encontrado</div>}
         </motion.div>
       </AnimatePresence>
     );
@@ -127,7 +174,6 @@ const Dashboard = () => {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: colors.background }}>
-      {/* Overlay para móvil */}
       {isMobile && (
         <motion.div
           className="fixed inset-0 bg-black bg-opacity-60 z-20"
@@ -139,7 +185,6 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Sidebar mejorado */}
       <motion.div
         className={`fixed lg:relative h-full ${isMobile ? 'w-[280px]' : 'w-72'} shadow-xl z-30`}
         initial={isMobile ? 'closed' : 'open'}
@@ -169,11 +214,7 @@ const Dashboard = () => {
 
         <div className="p-4">
           <ul className="mt-2">
-            {[
-              { id: 'home', icon: Home, label: 'Inicio' },
-              { id: 'reports', icon: FileText, label: 'Reportes' },
-              { id: 'analytics', icon: BarChart2, label: 'Analítica' }
-            ].map((item, index) => (
+            {getMenuItems().map((item, index) => (
               <motion.li
                 key={item.id}
                 variants={menuItemVariants}
@@ -223,8 +264,8 @@ const Dashboard = () => {
                   <span className="text-[15px]">Perfil</span>
                 </button>
               </motion.li>
-              <motion.li 
-                variants={menuItemVariants} 
+              <motion.li
+                variants={menuItemVariants}
                 className="mb-2 p-3 rounded-lg text-white font-medium"
                 whileHover={{ 
                   backgroundColor: `rgba(255, 255, 255, 0.15)`,
@@ -242,9 +283,7 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* Contenido principal mejorado */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header mejorado */}
         <div className="shadow-lg z-10" style={{ backgroundColor: colors.accent }}>
           <div className="container mx-auto px-4 py-3.5 flex justify-between items-center">
             <div className="flex items-center space-x-4">
@@ -258,7 +297,7 @@ const Dashboard = () => {
             </div>
 
             <div className="flex items-center space-x-5">
-              <motion.button
+              <motion.button 
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
                 className="relative p-2 focus:outline-none text-white hover:bg-white/10 rounded-full transition-colors"
@@ -281,8 +320,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Contenido principal con mejores sombras y espaciado */}
-        <div className="flex-1 overflow-auto p-4 sm:p-5 lg:p-6" style={{ backgroundColor: colors.background }}>
+        <div className="flex-1 overflow-auto p-4 sm:p-5 lg:p-0" style={{ backgroundColor: colors.background }}>
           <div className="container mx-auto max-w-7xl">
             {renderContent()}
           </div>
