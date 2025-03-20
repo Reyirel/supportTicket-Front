@@ -10,6 +10,7 @@ import Reportes from '../components/Reportes';
 import Perfil from '../components/Perfil';
 import AllTickets from '../components/AllTickets';
 import AdminTickets from '../components/AdminTickets';
+import AdminTicketsSelect from '../components/AdminTicketsSelect';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ const Dashboard = () => {
 
   const getAnimationDirection = () => {
     const menuOrder = userRole === 'SUPPORT_STAFF' 
-      ? ['tickets', 'perfil']
+      ? ['tickets', 'assign', 'perfil']
       : ['home', 'reports', 'analytics', 'perfil'];
     if (!previousItem) return 1;
     
@@ -117,14 +118,15 @@ const Dashboard = () => {
   const getMenuItems = () => {
     if (userRole === 'SUPPORT_STAFF') {
       return [
-        { id: 'tickets', icon: Ticket, label: 'Tickets' }
+        { id: 'tickets', icon: Ticket, label: 'Tickets' },
+        { id: 'assign', icon: FileText, label: 'Asignar Tickets' }
       ];
     }
     
     return [
       { id: 'home', icon: Home, label: 'Inicio' },
       { id: 'reports', icon: FileText, label: 'Reportes' },
-      { id: 'analytics', icon: BarChart2, label: 'Analítica' }
+      { id: 'analytics', icon: BarChart2, label: 'Mis tickets' }
     ];
   };
 
@@ -143,8 +145,9 @@ const Dashboard = () => {
             className="w-full h-full"
           >
             {activeItem === 'tickets' && <AdminTickets />}
+            {activeItem === 'assign' && <AdminTicketsSelect />}
             {activeItem === 'perfil' && <Perfil />}
-            {!['tickets', 'perfil'].includes(activeItem) && <div>Componente no encontrado</div>}
+            {!['tickets', 'assign', 'perfil'].includes(activeItem) && <div>Componente no encontrado</div>}
           </motion.div>
         </AnimatePresence>
       );

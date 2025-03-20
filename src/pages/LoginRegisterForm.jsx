@@ -590,9 +590,18 @@ const LoginRegisterForm = () => {
                       required
                     >
                       <option value="">Seleccione una secretaría</option>
-                      <option value="secretaria1">Secretaría 1</option>
-                      <option value="secretaria2">Secretaría 2</option>
-                      <option value="secretaria3">Secretaría 3</option>
+                      <option value="oficialia_mayor">Oficialía Mayor de la Asamblea</option>
+                      <option value="contraloria_municipal">Contraloría Municipal</option>
+                      <option value="secretaria_particular">Secretaría Particular y Relaciones Públicas</option>
+                      <option value="secretaria_tecnica">Secretaría Técnica</option>
+                      <option value="secretaria_general">Secretaría General Municipal</option>
+                      <option value="secretaria_tesoreria">Secretaría de Tesorería Municipal</option>
+                      <option value="secretaria_obras">Secretaría de Obras Públicas y Desarrollo Urbano</option>
+                      <option value="secretaria_planeacion">Secretaría de Planeación y Evaluación</option>
+                      <option value="secretaria_bienestar">Secretaría de Bienestar Social</option>
+                      <option value="secretaria_seguridad">Secretaría de Seguridad Pública, Tránsito Municipal, Auxilio Vial y Protección Civil</option>
+                      <option value="secretaria_desarrollo_pueblos">Secretaría de Desarrollo de Pueblos y Comunidades Indígenas</option>
+                      <option value="secretaria_economico">Secretaría de Desarrollo Económico y Turismo</option>
                     </motion.select>
                   </motion.div>
 
@@ -610,9 +619,45 @@ const LoginRegisterForm = () => {
                       required
                     >
                       <option value="">Seleccione una dirección</option>
-                      <option value="direccion1">Dirección 1</option>
-                      <option value="direccion2">Dirección 2</option>
-                      <option value="direccion3">Dirección 3</option>
+                      <option value="dir_auditoria_interna">Dirección de Auditoría Interna</option>
+                      <option value="dir_audiencias">Dirección de Audiencias y Atención Ciudadana</option>
+                      <option value="dir_logistica">Dirección de Logística, Eventos y Ayudantía</option>
+                      <option value="sec_ejecutiva_sipinna">Secretaría Ejecutiva de SIPINNA</option>
+                      <option value="instancia_mujeres">Instancia Municipal para el Desarrollo de las Mujeres</option>
+                      <option value="dir_juridica">Dirección Jurídica</option>
+                      <option value="unidad_transparencia">Unidad Municipal de Transparencia y Acceso a la Información</option>
+                      <option value="dir_comunicacion">Dirección de Comunicación Social y Marketing Digital</option>
+                      <option value="dir_gobierno">Dirección de Gobierno</option>
+                      <option value="dir_reglamentos">Dirección de Reglamentos, Comercio, Mercado y Espectáculos</option>
+                      <option value="dir_recursos_materiales">Dirección de Recursos Materiales y Patrimonio</option>
+                      <option value="dir_atencion_migrante">Dirección de Atención al Migrante</option>
+                      <option value="dir_enlace_relaciones">Dirección de Enlace de la Secretaría de Relaciones Exteriores</option>
+                      <option value="dir_ingresos">Dirección de Ingresos y Estrategias de Recaudación</option>
+                      <option value="dir_egresos">Dirección de Control y Seguimiento de Egresos</option>
+                      <option value="dir_recursos_humanos">Dirección de Recursos Humanos y Nómina</option>
+                      <option value="dir_cuenta_publica">Dirección de Cuenta Pública</option>
+                      <option value="dir_catastro">Dirección de Catastro</option>
+                      <option value="dir_administracion">Dirección de Administración</option>
+                      <option value="dir_desarrollo_urbano">Dirección de Desarrollo Urbano y Ordenamiento Territorial</option>
+                      <option value="dir_medio_ambiente">Dirección de Medio Ambiente y Desarrollo Sostenible</option>
+                      <option value="dir_servicios_municipales">Dirección de Servicios Municipales</option>
+                      <option value="dir_obras_publicas">Dirección de Obras Públicas</option>
+                      <option value="dir_servicios_publicos">Dirección de Servicios Públicos y Limpias</option>
+                      <option value="dir_tecnica_planeacion">Dirección Técnica de Planeación y Evaluación</option>
+                      <option value="dir_tecnologias">Dirección de Tecnologías de la Información</option>
+                      <option value="instancia_juventud">Instancia Municipal de la Juventud</option>
+                      <option value="dir_programas_sociales">Dirección de Programas Sociales</option>
+                      <option value="dir_educacion">Dirección de Educación</option>
+                      <option value="dir_deporte">Dirección del Deporte</option>
+                      <option value="dir_salud">Dirección de Salud</option>
+                      <option value="dir_cultura">Dirección de Cultura</option>
+                      <option value="dir_prevencion_delito">Dirección de Prevención del Delito</option>
+                      <option value="dir_administrativa">Dirección Administrativa</option>
+                      <option value="dir_transito">Dirección Preventiva Tránsito Municipal y Auxilio Vial</option>
+                      <option value="dir_proteccion_civil">Dirección de Protección Civil y Bomberos</option>
+                      <option value="dir_desarrollo_economico">Dirección de Desarrollo Económico</option>
+                      <option value="dir_desarrollo_agropecuario">Dirección de Desarrollo Agropecuario y Proyectos Productivos</option>
+                      <option value="dir_turismo">Dirección de Turismo</option>
                     </motion.select>
                   </motion.div>
                 </div>

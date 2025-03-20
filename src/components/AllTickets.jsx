@@ -92,7 +92,7 @@ const AllTickets = () => {
         
         const userData = JSON.parse(localStorage.getItem('userData'));
         if (userData && userData.token) {
-            socketRef.current = io('http://localhost:8080', {
+            socketRef.current = io('http://localhost:8080/api/tickets/get-all/${userId}', {
                 auth: {
                     token: userData.token
                 }
@@ -319,30 +319,115 @@ const AllTickets = () => {
     const TicketModal = () => {
         if (!selectedTicket || !modalOpen) return null;
 
+        // Cierra el modal cuando se presiona Escape
+        useEffect(() => {
+            const handleEscKey = (e) => {
+                if (e.key === 'Escape') handleCloseModal();
+            };
+            window.addEventListener('keydown', handleEscKey);
+            return () => window.removeEventListener('keydown', handleEscKey);
+        }, []);
+
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleCloseModal}>
-                <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-auto shadow-xl" onClick={e => e.stopPropagation()}>
-                    <div className="flex justify-between items-center border-b p-4 bg-gray-50">
-                        <h2 className="text-xl font-semibold">{selectedTicket.title || 'Detalle del Ticket'}</h2>
-                        <button className="text-3xl leading-none hover:text-gray-700" onClick={handleCloseModal}>&times;</button>
-                    </div>
-                    <div className="p-6">
-                        <div className="mb-4 bg-gray-50 p-4 rounded-lg">
-                            <p className="mb-2"><span className="font-bold">Descripción:</span> {selectedTicket.description}</p>
-                            <p className="mb-2"><span className="font-bold">Estado:</span> 
-                                <span className={`ml-2 px-2 py-1 rounded-full ${getStatusStyles(selectedTicket.status)}`}>
-                                    {translateStatus(selectedTicket.status)}
-                                </span>
-                            </p>
-                            <p className="mb-2"><span className="font-bold">Fecha:</span> {selectedTicket.createdAt && new Date(selectedTicket.createdAt).toLocaleString()}</p>
-                        </div>
-                        <div className="mt-6">
-                            <h3 className="text-lg font-semibold mb-3">Progreso de la tarea</h3>
-                            <TicketSteps status={selectedTicket.status} />
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <AnimatePresence>
+                {modalOpen && (
+                    <motion.div 
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={handleCloseModal}
+                    >
+                        <motion.div 
+                            className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-auto shadow-xl"
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", duration: 0.5 }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Encabezado */}
+                            <div className="relative border-b">
+                                <div className={`absolute top-0 left-0 h-1.5 w-full ${
+                                    selectedTicket.status?.toLowerCase().includes('completed') ? 'bg-green-500' :
+                                    selectedTicket.status?.toLowerCase().includes('progress') ? 'bg-blue-500' :
+                                    'bg-yellow-500'
+                                }`}></div>
+                                <div className="flex justify-between items-center p-4 pt-6">
+                                    <h2 className="text-xl font-semibold">{selectedTicket.title || 'Detalle del Ticket'}</h2>
+                                    <button 
+                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors" 
+                                        onClick={handleCloseModal}
+                                        aria-label="Cerrar modal"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* Contenido */}
+                            <div className="p-6">
+                                {/* Estado y fecha */}
+                                <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+                                    <div className="flex items-center mb-3 md:mb-0">
+                                        <span className="font-medium text-gray-700 mr-2">Estado:</span>
+                                        <span className={`px-3 py-1 rounded-full text-sm ${getStatusStyles(selectedTicket.status)}`}>
+                                            {translateStatus(selectedTicket.status)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <span className="text-gray-600">
+                                            {selectedTicket.openingDate ? new Date(selectedTicket.openingDate).toLocaleString() : 'Fecha no disponible'}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                {/* Descripción */}
+                                <motion.div 
+                                    className="mb-6 bg-gray-50 p-5 rounded-lg border border-gray-100 shadow-sm"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                >
+                                    <h3 className="font-medium text-gray-800 mb-3">Descripción</h3>
+                                    <p className="text-gray-700 whitespace-pre-line">{selectedTicket.description || 'Sin descripción'}</p>
+                                </motion.div>
+                                
+                                {/* Progreso de la tarea */}
+                                <motion.div 
+                                    className="mt-6"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                >
+                                    <h3 className="text-lg font-semibold mb-4">Progreso de la tarea</h3>
+                                    <TicketSteps status={selectedTicket.status} />
+                                </motion.div>
+                                
+                                {/* Acciones */}
+                                <motion.div 
+                                    className="mt-8 pt-4 border-t flex justify-end gap-3"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.4 }}
+                                >
+                                    <button 
+                                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                                        onClick={handleCloseModal}
+                                    >
+                                        Cerrar
+                                    </button>
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         );
     };
 
@@ -417,7 +502,7 @@ const AllTickets = () => {
                                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                         </svg>
-                                        {ticket.createdAt && new Date(ticket.createdAt).toLocaleDateString()}
+                                        {ticket.openingDate && new Date(ticket.openingDate).toLocaleDateString()}
                                     </span>
                                     <span className="text-sm text-blue-600 hover:underline">Ver detalles →</span>
                                 </div>
