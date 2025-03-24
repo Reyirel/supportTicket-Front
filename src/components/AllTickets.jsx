@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
-import io from 'socket.io-client';
+import React, { useState, useEffect } from "react";
 import { Steps } from 'primereact/steps';
 import 'primereact/resources/primereact.min.css';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
@@ -13,20 +12,14 @@ const AllTickets = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [highlightedTicketId, setHighlightedTicketId] = useState(null);
     
-    const REFRESH_INTERVAL = 30000; 
-    const intervalRef = useRef(null);
-    const socketRef = useRef(null);
-
     const isTokenValid = () => {
         try {
             const userData = JSON.parse(localStorage.getItem('userData'));
             if (!userData || !userData.token) {
                 return false;
             }
-            
-
-            
             return true;
         } catch (error) {
             console.error("Error al verificar el token:", error);
@@ -88,37 +81,75 @@ const AllTickets = () => {
     };
 
     useEffect(() => {
+        // Carga inicial de tickets
         fetchTickets();
         
-        const userData = JSON.parse(localStorage.getItem('userData'));
-        if (userData && userData.token) {
-            socketRef.current = io('http://localhost:8080/api/tickets/get-all/${userId}', {
-                auth: {
-                    token: userData.token
+        // Configurar polling con actualización selectiva
+        const pollingInterval = setInterval(async () => {
+            if (isTokenValid()) {
+                try {
+                    const userData = JSON.parse(localStorage.getItem('userData'));
+                    const userId = userData.userTicketDTO?.id;
+                    
+                    const response = await fetch(`http://localhost:8080/api/tickets/get-all/${userId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${userData.token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) throw new Error(`Error: ${response.status}`);
+                    
+                    const newTickets = await response.json();
+                    
+                    // Comparar con el estado actual y solo actualizar los que cambiaron
+                    setTickets(prevTickets => {
+                        // Crear un mapa de los tickets actuales para fácil comparación
+                        const prevTicketsMap = prevTickets.reduce((map, ticket) => {
+                            map[ticket.id] = ticket;
+                            return map;
+                        }, {});
+                        
+                        // Lista para almacenar los tickets actualizados
+                        let updatedTickets = [...prevTickets];
+                        let hasChanges = false;
+                        
+                        // Actualizar los tickets que cambiaron
+                        newTickets.forEach(newTicket => {
+                            const prevTicket = prevTicketsMap[newTicket.id];
+                            
+                            if (!prevTicket) {
+                                // Es un nuevo ticket
+                                updatedTickets.push(newTicket);
+                                hasChanges = true;
+                                console.log("Nuevo ticket detectado:", newTicket.id);
+                            } 
+                            // Comparar fechas de actualización o alguna otra propiedad
+                            else if (newTicket.lastUpdated !== prevTicket.lastUpdated || 
+                                    newTicket.status !== prevTicket.status) {
+                                // Reemplazar el ticket en la lista
+                                updatedTickets = updatedTickets.map(t => 
+                                    t.id === newTicket.id ? newTicket : t
+                                );
+                                hasChanges = true;
+                                console.log("Ticket actualizado:", newTicket.id);
+                            }
+                        });
+                        
+                        // Si hay cambios, actualizar el estado
+                        return hasChanges ? updatedTickets : prevTickets;
+                    });
+                    
+                } catch (error) {
+                    console.error("Error en polling:", error);
                 }
-            });
-            
-            socketRef.current.on('ticket-updated', (updatedTicket) => {
-                setTickets(prevTickets => 
-                    prevTickets.map(ticket => 
-                        ticket.id === updatedTicket.id ? updatedTicket : ticket
-                    )
-                );
-            });
-        }
-        
-        intervalRef.current = setInterval(() => {
-            fetchTickets();
-        }, REFRESH_INTERVAL);
-        
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
+            } else {
+                clearInterval(pollingInterval);
             }
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-            }
-        };
+        }, 10000); // cada 10 segundos
+        
+        return () => clearInterval(pollingInterval);
     }, []);
 
     useEffect(() => {
@@ -144,7 +175,12 @@ const AllTickets = () => {
         fetchTickets();
     };
 
-    // Reemplazamos ProgressBar por el componente TicketSteps con animaciones
+    const updateSingleTicket = async (ticketId) => {
+   
+        setHighlightedTicketId(ticketId);
+        setTimeout(() => setHighlightedTicketId(null), 2000); 
+    };
+
     const TicketSteps = ({ status }) => {
         const items = [
             { 
@@ -486,7 +522,11 @@ const AllTickets = () => {
                         <div 
                             key={ticket.id} 
                             onClick={() => handleOpenModal(ticket)}
-                            className="bg-white border rounded-lg shadow-sm p-5 cursor-pointer transition-all hover:shadow-md hover:-translate-y-1 duration-300"
+                            className={`bg-white border rounded-lg shadow-sm p-5 cursor-pointer transition-all 
+                                ${highlightedTicketId === ticket.id 
+                                    ? 'animate-pulse border-blue-500 shadow-blue-100' 
+                                    : 'hover:shadow-md hover:-translate-y-1'} 
+                                duration-300`}
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <h3 className="font-bold text-lg text-gray-800 flex-1">{ticket.title}</h3>
@@ -514,8 +554,6 @@ const AllTickets = () => {
             )}
             
             <TicketModal />
-
-            
         </div>
     );
 };
