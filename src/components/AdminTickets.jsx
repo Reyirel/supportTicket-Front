@@ -15,7 +15,6 @@ const AdminTickets = () => {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterPriority, setFilterPriority] = useState('ALL');
   
-  // Colores consistentes con el tema de la aplicación
   const colors = {
     primary: '#C4E5D8',
     secondary: '#8BBAB0',
@@ -43,7 +42,6 @@ const AdminTickets = () => {
         const response = await getAllTickets();
         if (response.success) {
           setUsers(response.data);
-          // Inicializar todos los usuarios como expandidos para ver sus tickets
           const initialExpandState = {};
           response.data.forEach(user => {
             initialExpandState[user.userId] = true;
@@ -79,6 +77,46 @@ const AdminTickets = () => {
       [userId]: !prev[userId]
     }));
   };
+
+  // Función para tomar el ticket mediante PATCH
+  const handleTakeTicket = async (userId, ticketId) => {
+    const storedUserData = localStorage.getItem("userData");
+    if (!storedUserData) return;
+    const token = JSON.parse(storedUserData).token;
+    try {
+      const response = await fetch(`http://localhost:8080/api/tickets/update-status/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ id: ticketId, status: "IN_PROGRESS" })
+      });
+      const data = await response.json();
+      if(response.ok){
+        setUsers(prevUsers => 
+          prevUsers.map(user => {
+            if(user.userId === userId){
+              return {
+                ...user,
+                ticketList: user.ticketList.map(ticket => {
+                  if(ticket.id === ticketId){
+                    return { ...ticket, status: "IN_PROGRESS" };
+                  }
+                  return ticket;
+                })
+              };
+            }
+            return user;
+          })
+        );
+      } else {
+        console.error("Error al tomar el ticket:", data.message);
+      }
+    } catch(error){
+      console.error("Error en la petición:", error);
+    }
+  };
   
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -100,9 +138,7 @@ const AdminTickets = () => {
     }
   };
   
-  // Filtrar usuarios y tickets según búsqueda y filtros
   const filteredUsers = users.filter(user => {
-    // Verificar si el usuario tiene tickets después de aplicar filtros
     const filteredTickets = user.ticketList.filter(ticket => {
       const matchesSearch = 
         searchTerm === '' ||
@@ -439,6 +475,7 @@ const AdminTickets = () => {
                                   color: status !== 'COMPLETED' ? 'white' : '#6B7280'
                                 }}
                                 disabled={status === 'COMPLETED'}
+                                onClick={status === 'NOT_STARTED' ? () => handleTakeTicket(user.userId, ticket.id) : undefined}
                               >
                                 {status === 'NOT_STARTED' ? 'Tomar ticket' : 
                                  status === 'IN_PROGRESS' ? 'Marcar como completado' : 'Completado'}
