@@ -125,7 +125,7 @@ const Dashboard = () => {
     
     return [
       { id: 'home', icon: Home, label: 'Inicio' },
-      { id: 'reports', icon: FileText, label: 'Reportes' },
+      { id: 'reports', icon: FileText, label: 'Crear Solicitud' },
       { id: 'analytics', icon: BarChart2, label: 'Mis tickets' }
     ];
   };

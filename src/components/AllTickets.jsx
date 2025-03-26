@@ -467,6 +467,20 @@ const AllTickets = () => {
         );
     };
 
+    // Nuevo componente para mostrar el personal de soporte (añadir dentro del componente principal)
+    const SupportStaffInfo = ({ staffName }) => {
+        if (!staffName || staffName === "null") return null;
+        
+        return (
+            <div className="flex items-center text-sm text-gray-600">
+                <svg className="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span>Atendido por: <span className="font-medium">{staffName}</span></span>
+            </div>
+        );
+    };
+
     if (loading) return (
         <div className="flex justify-center items-center p-8">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -546,6 +560,14 @@ const AllTickets = () => {
                                     </span>
                                     <span className="text-sm text-blue-600 hover:underline">Ver detalles →</span>
                                 </div>
+                                
+                                {/* Añadir el personal de soporte antes del TicketSteps */}
+                                {ticket.userSupportStaffName && ticket.userSupportStaffName !== "null" && (
+                                    <div className="mb-3">
+                                        <SupportStaffInfo staffName={ticket.userSupportStaffName} />
+                                    </div>
+                                )}
+                                
                                 <TicketSteps status={ticket.status} />
                             </div>
                         </div>
